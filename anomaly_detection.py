@@ -1,142 +1,94 @@
 # -*- coding: utf-8 -*-
 """
-Spyder Editor
+Created on Fri Dec 15 17:12:00 2017
 
-This is a temporary script file.
+@author: mark
 """
-import os
-import statistics
-import numpy
-import numpy.fft
+import pandas as pd
+import numpy as np
 import numpy.linalg as ln
-import scipy.stats
-import scipy.fftpack
-import math
-import statsmodels.api as sm
 import matplotlib.pyplot as plt
-#from scipy.stats import rankdata
-all_file=os.listdir("Training/Healthy")
-file_nums=len(all_file)
-health_matrix = []
-for i in range(0,file_nums):
-    target_file_name="Training/Healthy/" + all_file[i]
-    target_file = open(target_file_name,'r') 
-    target_file = target_file.readlines()[5:]
-    for j in range(0,len(target_file)):
-        target_file[j] = target_file[j].strip()
-        target_file[j] = float(target_file[j])  
-    data_mean = statistics.mean(target_file)
-    data_std = statistics.stdev(target_file)
-    data_rms = numpy.sqrt(sum(numpy.square(target_file))/len(target_file))
-    data_kurtosis = scipy.stats.kurtosis(target_file)+3
-    data_CF = max(numpy.abs(target_file))/data_rms
-    data_skewness = scipy.stats.skew(target_file)
-    data_ptp = max(target_file)-min(target_file)
-    data_fft = max(numpy.abs(scipy.fftpack.fft(target_file)/19200)[int(len(target_file)/2560*19):int(len(target_file)/2560*21)])
-#   data_fft = numpy.abs(scipy.fftpack.fft(target_file)/19200)[285:315]
-    target_data = list([data_mean,data_std,data_rms,data_kurtosis,data_CF,data_skewness,data_ptp,data_fft])
-    health_matrix.append(target_data)
-health_matrix=numpy.array(health_matrix)
-health_matrix=numpy.transpose(health_matrix)        
-all_file=os.listdir("Training/Faulty")
-file_nums=len(all_file)
-Faulty_matrix = []
-for i in range(0,file_nums):
-    target_file_name="Training/Faulty/" + all_file[i]
-    target_file = open(target_file_name,'r')
-    target_file = target_file.readlines()[5:]
-    for j in range(0,len(target_file)):
-        target_file[j] = target_file[j].strip()
-        target_file[j] = float(target_file[j])  
-    data_mean = statistics.mean(target_file)
-    data_std = statistics.stdev(target_file)
-    data_rms = numpy.sqrt(sum(numpy.square(target_file))/len(target_file))
-    data_kurtosis = scipy.stats.kurtosis(target_file)+3
-    data_CF = max(numpy.abs(target_file))/data_rms
-    data_skewness = scipy.stats.skew(target_file)
-    data_ptp = max(target_file)-min(target_file)
-    data_fft = max(numpy.abs(scipy.fftpack.fft(target_file)/19200)[int(len(target_file)/2560*19):int(len(target_file)/2560*21)])
- #   data_fft = numpy.abs(scipy.fftpack.fft(target_file)/19200)[285:315]
-    target_data = list([data_mean,data_std,data_rms,data_kurtosis,data_CF,data_skewness,data_ptp,data_fft])
-    Faulty_matrix.append(target_data)
-Faulty_matrix = numpy.array(Faulty_matrix)
-Faulty_matrix = numpy.transpose(Faulty_matrix) 
-all_file=os.listdir("Testing")
-file_nums=len(all_file)
-test_array = []
-test_matrix = []
-for i in range(0,file_nums):
-    target_file_name="Testing/" + all_file[i]
-    target_file = open(target_file_name,'r')
-    target_file = target_file.readlines()[5:]
-    for j in range(0,len(target_file)):
-        target_file[j] = target_file[j].strip()
-        target_file[j] = float(target_file[j])  
-    data_mean = statistics.mean(target_file)
-    data_std = statistics.stdev(target_file)
-    data_rms = numpy.sqrt(sum(numpy.square(target_file))/len(target_file))
-    data_kurtosis = scipy.stats.kurtosis(target_file)+3
-    data_CF = max(numpy.abs(target_file))/data_rms
-    data_skewness = scipy.stats.skew(target_file)
-    data_ptp = max(target_file)-min(target_file)
-    data_fft = max(numpy.abs(scipy.fftpack.fft(target_file)/19200)[int(len(target_file)/2560*19):int(len(target_file)/2560*21)])
-    target_data = list([data_mean,data_std,data_rms,data_kurtosis,data_CF,data_skewness,data_ptp,data_fft])
-    test_matrix.append(target_data)
-    test_array.append(data_fft)
-test_matrix = numpy.array(test_matrix)
-test_matrix = numpy.transpose(test_matrix)
-#fisher criteria   
-fisher_table = []
-for num_features in range(0,8):
-    fc = math.pow(statistics.mean(health_matrix[num_features])-statistics.mean(Faulty_matrix[num_features]),2)/(statistics.variance(health_matrix[num_features])+statistics.variance(Faulty_matrix[num_features]))
-    fisher_table.append(fc)
-train_array=numpy.concatenate((health_matrix[7],Faulty_matrix[7]))
-#logistic regression
-cv_list=[]
-for num in range(0,20):
-    cv_list.append(0.95)
-for num in range(20,40):
-    cv_list.append(0.05)
-result_array=numpy.concatenate((train_array,test_array))    
-logit = sm.Logit(cv_list,train_array)
-result=logit.fit()
-plt.plot(result.predict(result_array))
+from sklearn.preprocessing import StandardScaler
+from data_preprocess.time_data import TimeDataPreprocess
+
+def get_pca_component(eign_values, percent):
+    for i in range(len(eign_values)):
+        if sum(eign_values[0:i+1])/sum(eign_values) > percent:
+            return i + 1 
+
+def perform_t_squared(X, V):
+    components = V.shape[1]
+    eiv_diag_matrix=np.matrix(ln.inv(np.diag(eig_value[0:components])))
+    value = X*V*eiv_diag_matrix*V.T*X.T
+    return value.item()
+ 
+def perform_reconstruction_error(X, V):
+    return ln.norm((X - X*V*V.T))
+
+def perform_normalize(vectors):
+    vectors = np.array(vectors)
+    return vectors/(max(vectors)-min(vectors))
+
+# train data
+train_data = pd.read_csv("CSV/fan_data/fan1.csv")
+train_series = pd.Series(train_data['OLACTIVEPOWER'].values, 
+                         name="OLACTIVEPOWER", index=train_data['REPORTTIME'])
+# 選擇弱風速
+train_series = train_series[9:389]
+train_data_window = TimeDataPreprocess.transform_time_window(train_series, 10, 1, True)
+
+# test data
+test_data = pd.read_csv("CSV/fan_data/fan1_error.csv")
+test_series = pd.Series(test_data['OLACTIVEPOWER'].values, 
+                        name="OLACTIVEPOWER", 
+                        index=pd.to_datetime(test_data['REPORTTIME']))
+# reverse
+test_series = test_series[::-1]
+abnormal_series1 = list(test_series[:'2016-10-06 14:48'])
+abnormal_series2 = list(test_series['2016-10-06 15:10':])
+test_experiment_series = test_series['2016-10-06 14:24':'2016-10-06 15:35']
+
+test_series = pd.Series(abnormal_series1 + list(np.random.uniform(50, 51, size=60)) + abnormal_series2)
+test_data_window = TimeDataPreprocess.transform_time_window(test_series, 10, 1, True)
+
+# 標準化
+scaler = StandardScaler()
+scaler.fit(train_data_window)
+scale_train_window = scaler.transform(train_data_window)
+scale_test_window = scaler.transform(test_data_window)
+
+# PCA compute
+cov_matrix = np.cov(scale_train_window.T)  
+eig_value, eig_vectors = ln.eig(cov_matrix)
+
+# 取得 95% 重要的前幾個主成分
+components = get_pca_component(eig_value, 0.95)
+
+anomaly_score_list = []
+anomaly_score_list2 = []
+scale_test_window = np.matrix(scale_test_window)
+eig_vectors = np.matrix(eig_vectors)
+
+V = eig_vectors[:,0:components]
+
+for num in range(len(scale_test_window)):
+    # can not understand
+    anomaly_score = perform_t_squared(scale_test_window[num], V)
+    anomaly_score2 = perform_reconstruction_error(scale_test_window[num], V)
+    anomaly_score_list.append(anomaly_score)
+    anomaly_score_list2.append(anomaly_score2)
+   
+
+anomaly_score_list = perform_normalize(anomaly_score_list)
+anomaly_score_list2 = perform_normalize(anomaly_score_list2)
+     
+plt.figure(1)
+plt.subplot(411)
+plt.title('origin time series')
+plt.plot(test_series.values)
+plt.subplot(413)
+plt.title('anomaly_score')
+plt.plot(anomaly_score_list)
+plt.subplot(414)
+plt.plot(anomaly_score_list2)
 plt.show()
-#PCA start
-PCA_test_matrix = []
-norm_train_matrix = []
-norm_health_matrix = []
-for num in range(0,8):
-    norm_train_matrix.append(numpy.concatenate((health_matrix[num],Faulty_matrix[num],test_matrix[num])))
-for num in range(0,8):
-    PCA_test_matrix.append((norm_train_matrix[num]-statistics.mean(health_matrix[num]))/statistics.stdev(health_matrix[num]))
-    norm_health_matrix.append((health_matrix[num]-statistics.mean(health_matrix[num]))/statistics.stdev(health_matrix[num]))
-cov_data=numpy.cov(norm_health_matrix)  
-cov_eig,cov_eiv=ln.eig(cov_data)
-rank_cov=cov_eig
-#rank=rankdata(cov_eig)-1
-#rank_list = []\\   
-#for n1 in range(0,8):
-#    for n2 in range(0,8):
-#        if rank[n2] == 7-n1:
-#           rank_list.append(n2) 
-vn=0           
-for n1 in range(0,8):
-#    for n2 in range(0,n1+1):
-    if sum(rank_cov[0:n1+1])/sum(rank_cov) >0.95:
-        vn=n1
-        break    
-eiv_inv=numpy.matrix(ln.inv(numpy.diag(cov_eig[0:vn+1])))
-PCA_T2 = []
-PCA_test_matrix=numpy.matrix(PCA_test_matrix)
-cov_eiv=numpy.matrix(cov_eiv)
-cov_eig=numpy.matrix(cov_eig)
-tp_m = numpy.transpose(PCA_test_matrix)
-tp_eiv=numpy.transpose(cov_eiv)
-for num in range(0,70):
-#    PCA_T2.append(sum((sum((tp_m[num]*cov_eiv[0:vn+1])[0])*eiv_inv*cov_eiv[0:vn+1]*tp_m[num])[0]))
-     PCA_T2.append((tp_m[num]*tp_eiv[:,0:vn+1]*eiv_inv*cov_eiv[0:vn+1,:]*PCA_test_matrix[:,num])[0][0,0])
-PCA_T2=PCA_T2/(max(PCA_T2)-min(PCA_T2))     
-plt.plot(PCA_T2)
-plt.show()       
-#train_cov=numpy.cov(train_array)   
