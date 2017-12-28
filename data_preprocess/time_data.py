@@ -39,3 +39,7 @@ class TimeDataPreprocess:
                     time_series[i:i+window_size].values.tolist())
             data.append(transform_record)
         return pd.DataFrame(data)
+    
+    @staticmethod
+    def remove_outlier():
+        pass

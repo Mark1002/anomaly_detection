@@ -19,7 +19,8 @@ def perform_normalize(vectors):
 # train data
 train_data = pd.read_csv("CSV/fan_data/fan1.csv")
 train_series = pd.Series(train_data['OLACTIVEPOWER'].values, 
-                         name="OLACTIVEPOWER", index=train_data['REPORTTIME'])
+                         name="OLACTIVEPOWER", 
+                         index=pd.to_datetime(train_data['REPORTTIME']))
 # 選擇弱風速
 train_series = train_series[9:389]
 train_data_window = TimeDataPreprocess.transform_time_window(train_series, 10, 1, True)
