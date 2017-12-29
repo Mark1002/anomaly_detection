@@ -41,5 +41,10 @@ class TimeDataPreprocess:
         return pd.DataFrame(data)
     
     @staticmethod
-    def remove_outlier():
-        pass
+    def remove_outlier(time_series):
+        std = time_series.std()
+        mean = time_series.mean()
+        upper = mean + 2*std
+        lower = mean - 2*std
+        clear_series = time_series[(time_series > lower) & (time_series < upper)]
+        return clear_series
