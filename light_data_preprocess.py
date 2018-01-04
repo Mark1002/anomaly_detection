@@ -6,9 +6,9 @@ Created on Tue Jan  2 16:30:01 2018
 """
 
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
-from statsmodels.graphics.tsaplots import plot_acf
+import numpy as np
+from data_preprocess.time_data import TimeDataPreprocess
 
 def remove_na_zero(df):
     df = df.dropna(axis=1)
@@ -20,14 +20,19 @@ df = pd.read_csv("CSV/light/light2017.csv")
 df = remove_na_zero(df)
 
 features = ["V", "A", "PF", "W"]
-plot_num = len(features) * 100 + 10
-for i in range(len(features)):
-    train_series = pd.Series(df[features[i]].values, name=features[i], 
-                             index=pd.to_datetime(df['REPORTTIME'])).sort_index()
-    plt.subplot(plot_num + i + 1)
-    plt.title(features[i])
-    plt.plot(train_series['2017-03-30':'2017-05-01'])
-plt.tight_layout()
-plt.show()
+train_series = pd.Series(df[features[3]].values, name=features[3],
+                         index=pd.to_datetime(df['REPORTTIME']))
+train_series[train_series == 0] = np.nan
+train_series_regular = train_series.resample('1T').bfill()
+train_series_regular.interpolate(method='time')
+plt.plot(train_series)
 
-plot_acf(train_series)
+
+ts = train_series['2017-04-18 12:00':'2017-04-18 15:00']
+new_df = pd.DataFrame()
+for i in range(3, 0, -1):
+    new_df['t-' + str(i)] = ts.shift(i)
+new_df['t'] = ts.values
+
+slice_window = TimeDataPreprocess.transform_time_window(ts, 4, 1)
+
