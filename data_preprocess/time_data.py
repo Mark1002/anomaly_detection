@@ -20,31 +20,31 @@ class TimeDataPreprocess:
             data_cf = max(np.abs(time_series))/data_rms
             data_skewness = scipy.stats.skew(time_series)
             data_ptp = max(time_series)-min(time_series)
-            transform_record = np.array([data_mean, data_std, data_rms, data_kurtosis, 
-                                     data_cf, data_skewness, data_ptp])
+            transform_record = pd.Series([data_mean, data_std, data_rms, 
+                                          data_kurtosis, data_cf, 
+                                          data_skewness, data_ptp], 
+                                          index=['data_mean', 'data_std', 
+                                                 'data_rms', 'data_kurtosis',
+                                                 'data_cf', 'data_skewness',
+                                                 'data_ptp'])
         else:
             transform_record = time_series
         return transform_record
     
     @staticmethod
-    def transform_time_window(time_series, window_size, offset, is_extract_feature=False):
-        data = []
-        for i in range(0, len(time_series), offset):
-            if len(time_series[i:i+window_size]) < window_size:
-                break
-            if is_extract_feature is False:
-                transform_record = time_series[i:i+window_size].values.tolist()
-            else:
-                transform_record = TimeDataPreprocess.extract_feature(
-                    time_series[i:i+window_size].values.tolist())
-            data.append(transform_record)
-        return pd.DataFrame(data)
+    def transform_time_window(time_series, window_size, offset):
+        df = pd.DataFrame()
+        for i in range(window_size-1, 0, -1*offset):
+            df['t-' + str(i)] = time_series.shift(i)
+        df['t'] = time_series.values
+        df = df.dropna()
+        return df
     
     @staticmethod
-    def remove_outlier(time_series):
+    def remove_outlier(time_series, std_num):
         std = time_series.std()
         mean = time_series.mean()
-        upper = mean + 2*std
-        lower = mean - 2*std
+        upper = mean + std_num * std
+        lower = mean - std_num * std
         clear_series = time_series[(time_series > lower) & (time_series < upper)]
         return clear_series
