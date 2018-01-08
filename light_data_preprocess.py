@@ -11,12 +11,17 @@ import numpy as np
 from data_preprocess.time_data import TimeDataPreprocess
 from sklearn.preprocessing import StandardScaler
 from anomal_algo.pca import PCA
+from sklearn.metrics import confusion_matrix
 
 def remove_na_zero(df):
     df = df.dropna(axis=1)
     ts = df.any()
     df = df[ts[ts.values].index]
     return df
+
+def perform_threshold_predict(anomaly_score_series, threshold):
+    predict_label = (anomaly_score_series > threshold).values
+    return predict_label
 
 df = pd.read_csv("CSV/light/light2017.csv")
 df = remove_na_zero(df)
@@ -46,6 +51,10 @@ test_series = pd.Series(normaly_list + abnormal_list,
 # shift to time window
 train_df = TimeDataPreprocess.transform_time_window(train_series_regular, 10, 1)
 test_df = TimeDataPreprocess.transform_time_window(test_series, 10, 1)
+ground_true_label = np.array(
+    [False for i in range(len(test_df[:'2017-12-27 18:31']))] + 
+    [True for i in range(len(test_df['2017-12-27 18:32':]))]
+)
 # time series to supervised learning process
 train_X = train_df.loc[:,(train_df.columns != 't')]
 train_Y = train_df['t'].values
@@ -82,3 +91,9 @@ plt.plot(anomaly_score_series)
 plt.subplot(212)
 plt.plot(test_series)
 plt.show()
+
+predict_label = perform_threshold_predict(anomaly_score_series, 50)
+con_matrix = confusion_matrix(ground_true_label, predict_label)
+tn, fp, fn, tp = con_matrix.ravel()
+precision = tp / (tp + fp)
+recall = tp / (tp + fn)
